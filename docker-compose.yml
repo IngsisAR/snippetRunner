@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  snippet_runner_db:
+    image: postgres:15.2
+    container_name: snippet_runner_db
+    env_file:
+      - env/runnerdb.env
+    ports:
+      - "5434:5434"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: snippet_runner
+    env_file:
+      - env/runner.env
+    ports:
+      - "8082:8082"
+    depends_on:
+      - snippet_runner_db
+
+volumes:
+  db_data:

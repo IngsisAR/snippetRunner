@@ -21,6 +21,14 @@ java {
 
 repositories {
 	mavenCentral()
+  maven {
+    name = "GitHubPackages"
+    url = uri("https://maven.pkg.github.com/IngsisAHRE/PrintScript")
+    credentials {
+      username = project.findProperty("GITHUB_USERNAME") ?: System.getenv("GITHUB_USERNAME")
+      password = project.findProperty("GITHUB_TOKEN") ?: System.getenv("GITHUB_TOKEN")
+    }
+  }
 }
 
 dependencies {
@@ -33,6 +41,13 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+  implementation 'printscript:lexer:1.1.9'
+  implementation 'printscript:interpreter:1.1.9'
+  implementation 'printscript:parser:1.1.9'
+  implementation 'printscript:utils:1.1.9'
+  implementation 'printscript:sca:1.1.9'
+  implementation 'printscript:cli:1.1.9'
+  implementation 'printscript:formatter:1.1.9'
 }
 
 kotlin {
