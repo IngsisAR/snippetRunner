@@ -28,8 +28,11 @@ jobs:
         run: chmod +x gradlew
       - name: Print environment variables
         run: |
-          echo "GITHUB_USERNAME=${{ secrets.USERNAME }}"
-          echo "GITHUB_TOKEN=${{ secrets.PACKAGE_TOKEN }}"
+          echo "GITHUB_USERNAME=${USERNAME}"
+          echo "GITHUB_TOKEN=${TOKEN}"
+        env:
+          USERNAME: ${{ secrets.USERNAME }}
+          TOKEN: ${{ secrets.PACKAGE_TOKEN }}
       - name: Build with Gradle
         run: ./gradlew build
         env:
