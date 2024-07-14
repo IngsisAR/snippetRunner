@@ -49,7 +49,7 @@ jobs:
             push: true
             tags: ${{ steps.meta.outputs.tags }}
             labels: ${{ steps.meta.outputs.labels }}
-            build-args: |
+            secret-envs: |
               USERNAME=${{ github.actor }}
               TOKEN=${{ secrets.GITHUB_TOKEN }}
 
