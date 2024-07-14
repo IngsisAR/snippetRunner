@@ -13,7 +13,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 @Component
 class RequestLogFilter : OncePerRequestFilter() {
-    private val logger: Logger = LoggerFactory.getLogger(RequestLogFilter::class.java)
+    private val requestLogger: Logger = LoggerFactory.getLogger(RequestLogFilter::class.java)
 
     override fun doFilterInternal(
         request: HttpServletRequest,
@@ -23,7 +23,7 @@ class RequestLogFilter : OncePerRequestFilter() {
         try {
             filterChain.doFilter(request, response)
         } finally {
-            logger.info(
+            requestLogger.info(
                 "Request: ${request.method} ${request.requestURI} - Response: ${response.status}",
             )
         }
