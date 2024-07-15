@@ -26,4 +26,4 @@ COPY --from=build /home/gradle/src/newrelic/newrelic.yml /newrelic.yml
 WORKDIR /app
 EXPOSE ${PORT}
 
-ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=production", "-javaagent:/newrelic.jar", "/app/snippetPermission.jar"]
+ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=production", "-javaagent:/newrelic.jar", "/app/snippetRunner.jar"]
