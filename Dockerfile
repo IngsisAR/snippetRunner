@@ -3,6 +3,9 @@ FROM gradle:8.8-jdk21 AS build
 LABEL author="Ingsis AHRE"
 COPY . /home/gradle/src
 WORKDIR /home/gradle/src
+# Necesario para las actions de docker publish
+ENV USERNAME=${USERNAME}
+ENV TOKEN=${TOKEN}
 RUN gradle build
 
 # Etapa 2: Runtime
