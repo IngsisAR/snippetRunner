@@ -5,10 +5,10 @@ COPY . /home/gradle/src
 WORKDIR /home/gradle/src
 # Necesario para las actions de docker publish
 ARG USERNAME
-ARG TOKEN
 ENV USERNAME=${USERNAME}
+ARG TOKEN
 ENV TOKEN=${TOKEN}
-RUN gradle build
+RUN gradle build --no-daemon
 
 # Etapa 2: Runtime
 FROM eclipse-temurin:21-jre
