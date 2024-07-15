@@ -4,6 +4,8 @@ LABEL author="Ingsis AHRE"
 COPY . /home/gradle/src
 WORKDIR /home/gradle/src
 # Necesario para las actions de docker publish
+ARG USERNAME
+ARG TOKEN
 ENV USERNAME=${USERNAME}
 ENV TOKEN=${TOKEN}
 RUN gradle build
