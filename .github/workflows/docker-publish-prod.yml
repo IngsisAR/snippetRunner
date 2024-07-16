@@ -1,63 +1,92 @@
-name: Create and publish a Docker image for production
+name: Build, Publish and Deploy Docker image for production
 
-# Configures this workflow to run every time a change is pushed to the branch called `main`.
+# Configura el workflow para que se ejecute cada vez que se haga push a la rama main.
 on:
   push:
     branches:
       - main
 
-# Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
+# Define dos variables de entorno personalizadas para el workflow. Estas se usan para el dominio del registro de contenedores y un nombre para la imagen Docker que este workflow construye.
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}-prod
 
-# There is a single job in this workflow. It's configured to run on the latest available version of Ubuntu.
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
-    # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
+    # Configura los permisos otorgados al GITHUB_TOKEN para las acciones en este trabajo.
     permissions:
       contents: read
       packages: write
       attestations: write
       id-token: write
-      #
     steps:
-        - name: Checkout repository
-          uses: actions/checkout@v4
-      # Uses the `docker/login-action` action to log in to the Container registry using the account and password that will publish the packages. Once published, the packages are scoped to the account defined here.
-        - name: Log in to the Container registry
-          uses: docker/login-action@v3
-          with:
-            registry: ${{ env.REGISTRY }}
-            username: ${{ github.actor }}
-            password: ${{ secrets.GITHUB_TOKEN }}
-      # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
-        - name: Extract metadata (tags, labels) for Docker
-          id: meta
-          uses: docker/metadata-action@v5
-          with:
-            images: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}'
-      # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.
-      # It uses the `context` parameter to define the build's context as the set of files located in the specified path. For more information, see "[Usage](https://github.com/docker/build-push-action#usage)" in the README of the `docker/build-push-action` repository.
-      # It uses the `tags` and `labels` parameters to tag and label the image with the output from the "meta" step.
-        - name: Build and push Docker image
-          id: push
-          uses: docker/build-push-action@v6
-          with:
-            context: .
-            push: true
-            tags: ${{ steps.meta.outputs.tags }}
-            labels: ${{ steps.meta.outputs.labels }}
-            build-args: |
-              USERNAME=${{ secrets.PUBLISH_TOKEN }}
-              TOKEN=${{ secrets.PACKAGE_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)."
-        - name: Generate artifact attestation
-          uses: actions/attest-build-provenance@v1
-          with:
-            subject-name: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}'
-            subject-digest: ${{ steps.push.outputs.digest }}
-            push-to-registry: true
+      # Usa la acción docker/login-action para iniciar sesión en el registro de contenedores usando la cuenta y contraseña que publicará los paquetes. Una vez publicados, los paquetes se asignan al alcance de la cuenta definida aquí.
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Este paso usa docker/metadata-action para extraer etiquetas y etiquetas que se aplicarán a la imagen especificada. El id "meta" permite que la salida de este paso se refiera en un paso posterior. El valor de las imágenes proporciona el nombre base para las etiquetas y etiquetas.
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}'
+
+      # Este paso usa la acción docker/build-push-action para construir la imagen, basada en el Dockerfile de tu repositorio. Si la construcción tiene éxito, empuja la imagen a GitHub Packages.
+      # Usa el parámetro context para definir el contexto de la construcción como el conjunto de archivos ubicados en la ruta especificada. Para más información, vea "[Usage](https://github.com/docker/build-push-action#usage)" en el README del repositorio docker/build-push-action.
+      # Usa los parámetros tags y labels para etiquetar y etiquetar la imagen con la salida del paso "meta".
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            USERNAME=${{ secrets.PUBLISH_TOKEN }}
+            TOKEN=${{ secrets.PACKAGE_TOKEN }}
+
+      # Este paso genera una atestación de artefactos para la imagen, que es una declaración infalsificable sobre dónde y cómo se construyó. Aumenta la seguridad de la cadena de suministro para las personas que consumen la imagen. Para más información, vea "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)."
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}'
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push-image
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan 191.233.252.72 >> ~/.ssh/known_hosts
+
+      - name: Deploy to Production
+        run: |
+          ssh ingsisAHRE@191.233.252.72 << 'EOF'
+            cd snippetInfra
+            sudo su
+            docker pull ${{ env.REGISTRY }}/$(echo "${{ github.repository }}-prod" | tr '[:upper:]' '[:lower:]'):main
+            docker-compose -f docker-compose.prod.yml up -d
+          EOF
