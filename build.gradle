@@ -1,33 +1,38 @@
-import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-	id 'org.springframework.boot' version '3.3.1'
-	id 'io.spring.dependency-management' version '1.1.5'
-	id 'org.jetbrains.kotlin.plugin.jpa' version '1.9.24'
-	id 'org.jetbrains.kotlin.jvm' version '1.9.24'
-	id 'org.jetbrains.kotlin.plugin.spring' version '1.9.24'
-	id 'org.jlleitschuh.gradle.ktlint' version '12.1.1'
-	id 'jacoco-report-aggregation'
+  id 'org.springframework.boot' version '3.3.1'
+  id 'io.spring.dependency-management' version '1.1.5'
+  id 'org.jetbrains.kotlin.plugin.jpa' version '1.9.24'
+  id 'org.jetbrains.kotlin.jvm' version '1.9.24'
+  id 'org.jetbrains.kotlin.plugin.spring' version '1.9.24'
+  id 'jacoco-report-aggregation'
   id "de.undercouch.download" version "5.3.0"
 }
 
-group = 'austral.ingsisAHRE'
-version = '0.0.1-SNAPSHOT'
-
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+configurations {
+  compileOnly {
+    extendsFrom annotationProcessor
+  }
+  ktlint
 }
 
 repositories {
-	mavenCentral()
+  mavenCentral()
   maven {
     name = "GitHubPackages"
     url = uri("https://maven.pkg.github.com/IngsisAHRE/PrintScript")
     credentials {
       username = project.findProperty("USERNAME") ?: System.getenv("USERNAME")
       password = project.findProperty("TOKEN") ?: System.getenv("TOKEN")
+    }
+  }
+  maven {
+    name = "GitHubPackages"
+    url = uri("https://maven.pkg.github.com/austral-ingsis/class-redis-streams")
+    credentials {
+      username = System.getenv("USERNAME")
+      password = System.getenv("TOKEN")
     }
   }
 }
@@ -55,71 +60,82 @@ dependencies {
   compileOnly 'org.projectlombok:lombok'
   annotationProcessor 'org.projectlombok:lombok'
   implementation("com.newrelic.agent.java:newrelic-agent:7.2.0")
+  ktlint("com.pinterest:ktlint:0.49.1") {
+    attributes {
+      attribute(Bundling.BUNDLING_ATTRIBUTE, getObjects().named(Bundling, Bundling.EXTERNAL))
+    }
+  }
+  implementation("org.springframework.boot:spring-boot-starter-data-redis")
+  implementation("org.austral.ingsis:redis-streams-mvc:0.1.13")
 }
 
-kotlin {
-	compilerOptions {
-		freeCompilerArgs.addAll '-Xjsr305=strict'
-	}
-}
-
-ktlint {
-	version = "0.50.0"
-	debug = true
-	verbose = true
-	android = false
-	outputToConsole = true
-	outputColorName = "RED"
-	reporters {
-		reporter(ReporterType.PLAIN)
-	}
+tasks.withType(KotlinCompile) {
+  kotlinOptions {
+    freeCompilerArgs += "-Xjsr305=strict"
+    jvmTarget = 21
+  }
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
-	finalizedBy(tasks.jacocoTestReport)
+  useJUnitPlatform()
 }
 
-tasks.jacocoTestCoverageVerification {
-	violationRules {
-		rule {
-			element = "BUNDLE"
-			limit {
-				counter = "INSTRUCTION"
-				value = "COVEREDRATIO"
-				minimum = 0.80
-			}
-			limit {
-				counter = "BRANCH"
-				value = "COVEREDRATIO"
-				minimum = 0.70
-			}
-		}
-	}
+tasks.register("ktlintCheck", JavaExec) {
+  group = "verification"
+  description = "Check Kotlin code style."
+  classpath = configurations.ktlint
+  mainClass = "com.pinterest.ktlint.Main"
+  args "src/**/*.kt", "**.kts", "!**/build/**"
 }
 
-tasks.check {
-	dependsOn(tasks.ktlintCheck)
-	dependsOn(tasks.jacocoTestCoverageVerification)
+tasks.named("check") {
+  dependsOn tasks.named("ktlintCheck")
 }
 
-tasks.register('installGitHooks', Copy) {
-	from new File(rootProject.rootDir, '/hooks')
-	into { new File(rootProject.rootDir, '/.git/hooks') }
-	fileMode 0775
+tasks.register("ktlintFormat", JavaExec) {
+  group = "formatting"
+  description = "Fix Kotlin code style deviations."
+  classpath = configurations.ktlint
+  mainClass = "com.pinterest.ktlint.Main"
+  jvmArgs "--add-opens=java.base/java.lang=ALL-UNNAMED"
+  args "-F", "src/**/*.kt", "**.kts", "!**/build/**"
+}
+
+task installGitHooks(type: Copy) {
+  from new File(rootProject.rootDir, '/hooks')
+  into { new File(rootProject.rootDir, '/.git/hooks') }
+  fileMode 0775
 }
 
 tasks.build {
-	dependsOn(tasks.installGitHooks)
+  dependsOn installGitHooks
 }
 
-tasks.register('downloadNewrelic', Download) {
+tasks.jacocoTestCoverageVerification {
+  violationRules {
+    rule {
+      element = "BUNDLE"
+      limit {
+        counter = "INSTRUCTION"
+        value = "COVEREDRATIO"
+        minimum = 0.80
+      }
+      limit {
+        counter = "BRANCH"
+        value = "COVEREDRATIO"
+        minimum = 0.70
+      }
+    }
+  }
+}
+
+task downloadNewrelic(type: Download) {
   mkdir 'newrelic'
   src 'https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic-java.zip'
   dest file('newrelic')
 }
 
-tasks.register('unzipNewrelic', Copy) {
+task unzipNewrelic(type: Copy) {
   from zipTree(file('newrelic/newrelic-java.zip'))
   into rootDir
 }
