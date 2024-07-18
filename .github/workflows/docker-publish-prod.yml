@@ -88,5 +88,6 @@ jobs:
             cd snippetInfra
             sudo su
             docker pull ${{ env.REGISTRY }}/$(echo "${{ github.repository }}-prod" | tr '[:upper:]' '[:lower:]'):main
+            docker image prune -a
             docker-compose -f docker-compose.prod.yml up -d
           EOF
