@@ -2,7 +2,12 @@ package austral.ingsisAHRE.snippetRunner.redis.consumer
 
 import austral.ingsisAHRE.snippetRunner.integration.AssetService
 import austral.ingsisAHRE.snippetRunner.redis.event.LintRequestEvent
+import austral.ingsisAHRE.snippetRunner.redis.event.LintResultEvent
+import austral.ingsisAHRE.snippetRunner.redis.event.LintStatus
+import austral.ingsisAHRE.snippetRunner.redis.producer.LintResultProducer
+import austral.ingsisAHRE.snippetRunner.runner.model.dto.request.LintSnippetDTO
 import austral.ingsisAHRE.snippetRunner.runner.service.PrintscriptRunnerService
+import kotlinx.coroutines.runBlocking
 import org.austral.ingsis.redis.RedisStreamConsumer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -24,6 +29,7 @@ class LintRequestConsumer
         redis: RedisTemplate<String, String>,
         private val assetService: AssetService,
         private val printscriptRunnerService: PrintscriptRunnerService,
+        private val producer: LintResultProducer,
     ) : RedisStreamConsumer<LintRequestEvent>(streamName, groupName, redis) {
         init {
             subscription()
@@ -43,9 +49,38 @@ class LintRequestConsumer
 
             try {
                 logger.info("Linting Snippet(${payload.snippetId})")
-                // val result = printscriptRunnerService.lint(asset.body!!, payload.snippetId)
+                val result: String =
+                    printscriptRunnerService.lint(
+                        payload.userId,
+                        LintSnippetDTO(
+                            content = asset.body!!,
+                            snippetId = payload.snippetId,
+                            linterRules = payload.linterRules,
+                        ),
+                    )
+
+                val lintStatus: LintStatus = if (result.isEmpty()) LintStatus.PASSED else LintStatus.FAILED
+
+                runBlocking {
+                    producer.publishEvent(
+                        LintResultEvent(
+                            userId = payload.userId,
+                            snippetId = payload.snippetId,
+                            status = lintStatus,
+                        ),
+                    )
+                }
             } catch (e: Exception) {
-                logger.error("Error running printscript for Snippet(${payload.snippetId})", e)
+                logger.error("Error linting Snippet(${payload.snippetId})", e)
+                runBlocking {
+                    producer.publishEvent(
+                        LintResultEvent(
+                            userId = payload.userId,
+                            snippetId = payload.snippetId,
+                            status = LintStatus.FAILED,
+                        ),
+                    )
+                }
             }
         }
 

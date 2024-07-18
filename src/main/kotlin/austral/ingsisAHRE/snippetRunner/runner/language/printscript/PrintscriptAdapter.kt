@@ -8,6 +8,7 @@ import formatter.FormatterImpl
 import interpreter.InterpreterImpl
 import lexer.Lexer
 import parser.Parser
+import sca.StaticCodeAnalyzer
 import utils.ASTNode
 import utils.PrintScriptChunkReader
 
@@ -103,5 +104,29 @@ class PrintscriptAdapter {
             }
         }
         return formattedContent.toString()
+    }
+
+    fun lint(
+        content: String,
+        configFile: String,
+        version: String?,
+    ): String {
+        val chunks = PrintScriptChunkReader(CHUNK_KEYWORDS_REGEX_PATH).readChunksFromString(content)
+        val sca = StaticCodeAnalyzer()
+        var result: String = ""
+        for (chunk in chunks) {
+            when (val ast = validateChunk(chunk, getTokenRegex(version ?: "1.1"), version ?: "1.1")) {
+                is ASTBuilderSuccess -> {
+                    result += "\n" + sca.analyze(ast.astNode, configFile, version ?: "1.1")
+                }
+                is ASTBuilderFailure -> {
+                    if (ast.errorMessage == "Empty tokens") {
+                        result += "\n" + ast.errorMessage
+                        continue
+                    }
+                }
+            }
+        }
+        return result
     }
 }

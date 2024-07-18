@@ -1,5 +1,6 @@
 package austral.ingsisAHRE.snippetRunner.runner.service
 
+import austral.ingsisAHRE.snippetRunner.redis.event.LinterRulesDTO
 import austral.ingsisAHRE.snippetRunner.runner.language.printscript.CustomEnvironmentProvider
 import austral.ingsisAHRE.snippetRunner.runner.language.printscript.ListOutputProvider
 import austral.ingsisAHRE.snippetRunner.runner.language.printscript.PrintscriptAdapter
@@ -7,6 +8,7 @@ import austral.ingsisAHRE.snippetRunner.runner.language.printscript.StringListIn
 import austral.ingsisAHRE.snippetRunner.runner.model.dto.request.Env
 import austral.ingsisAHRE.snippetRunner.runner.model.dto.request.FormatSnippetRequestDTO
 import austral.ingsisAHRE.snippetRunner.runner.model.dto.request.FormatterRulesDTO
+import austral.ingsisAHRE.snippetRunner.runner.model.dto.request.LintSnippetDTO
 import austral.ingsisAHRE.snippetRunner.runner.model.dto.request.RunSnippetRequestDTO
 import austral.ingsisAHRE.snippetRunner.runner.model.dto.response.RunSnippetResponseDTO
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -65,6 +67,19 @@ class PrintscriptRunnerService : RunnerService {
         return result
     }
 
+    override fun lint(
+        userId: String,
+        snippetDTO: LintSnippetDTO,
+    ): String {
+        logger.info("Linting snippet for user $userId")
+        val configFile = "resources/static/SCAConfig.json"
+        generateLinterConfig(configFile, snippetDTO.linterRules)
+        val result = PrintscriptAdapter().lint(snippetDTO.content, configFile, snippetDTO.version)
+        logger.info("Snippet linted successfully")
+        removeGeneratedConfigFile(configFile)
+        return result
+    }
+
     private fun removeGeneratedConfigFile(configFile: String) {
         val file = File(configFile)
         if (file.exists()) {
@@ -81,6 +96,20 @@ class PrintscriptRunnerService : RunnerService {
                 registerModule(kotlinModule())
             }
         val jsonString = mapper.writeValueAsString(formatterRules)
+        val path = Paths.get(configFile)
+        Files.createDirectories(path.parent) // Ensure the directory exists
+        Files.write(path, jsonString.toByteArray())
+    }
+
+    private fun generateLinterConfig(
+        configFile: String,
+        linterRules: LinterRulesDTO,
+    ) {
+        val mapper =
+            jacksonObjectMapper().apply {
+                registerModule(kotlinModule())
+            }
+        val jsonString = mapper.writeValueAsString(linterRules)
         val path = Paths.get(configFile)
         Files.createDirectories(path.parent) // Ensure the directory exists
         Files.write(path, jsonString.toByteArray())

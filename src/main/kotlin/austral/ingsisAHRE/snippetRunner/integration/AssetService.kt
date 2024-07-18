@@ -22,7 +22,7 @@ class AssetService
         fun getSnippet(snippetId: String): ResponseEntity<String> {
             try {
                 val request = HttpEntity<String>(getHeaders())
-                return rest.exchange("$bucketUrl/snippets/$snippetId", HttpMethod.GET, request, String::class.java)
+                return rest.exchange("$bucketUrl/$snippetId", HttpMethod.GET, request, String::class.java)
             } catch (e: Exception) {
                 return ResponseEntity.badRequest().build()
             }

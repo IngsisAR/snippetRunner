@@ -8,7 +8,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.validation.annotation.Validated
-import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -20,11 +19,6 @@ import org.springframework.web.bind.annotation.RestController
 class RunnerController(
     private val languageRunnerServiceSelector: LanguageRunnerServiceSelector,
 ) {
-    @GetMapping
-    fun index(): String {
-        return "I'm Alive!"
-    }
-
     @PostMapping("/run")
     fun runSnippet(
         @AuthenticationPrincipal jwt: Jwt,
@@ -37,7 +31,7 @@ class RunnerController(
                 )
             return ResponseEntity.ok(runnerService.runSnippet(jwt.subject, snippetDTO))
         } catch (e: Exception) {
-            return ResponseEntity.internalServerError().body(RunSnippetResponseDTO(listOf(e.message ?: "An error occurred")))
+            return ResponseEntity.badRequest().body(RunSnippetResponseDTO(listOf(e.message ?: "An error occurred")))
         }
     }
 
