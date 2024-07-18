@@ -4,6 +4,7 @@ import astbuilder.ASTBuilderFailure
 import astbuilder.ASTBuilderResult
 import astbuilder.ASTBuilderSuccess
 import astbuilder.ASTProviderFactory
+import formatter.FormatterImpl
 import interpreter.InterpreterImpl
 import lexer.Lexer
 import parser.Parser
@@ -80,5 +81,27 @@ class PrintscriptAdapter {
             outputProvider.print(e.message ?: "An error occurred")
             return null
         }
+    }
+
+    fun format(
+        content: String,
+        configFile: String,
+        version: String?,
+    ): String {
+        val chunks = PrintScriptChunkReader(CHUNK_KEYWORDS_REGEX_PATH).readChunksFromString(content)
+        val formatter = FormatterImpl()
+        val formattedContent = StringBuilder()
+        for (chunk in chunks) {
+            when (val ast = validateChunk(chunk, getTokenRegex(version ?: "1.1"), version ?: "1.1")) {
+                is ASTBuilderSuccess -> {
+                    formattedContent.append(formatter.format(ast.astNode, configFile, version ?: "1.1"))
+                }
+                is ASTBuilderFailure -> {
+                    if (ast.errorMessage == "Empty tokens") continue
+                    error(ast.errorMessage)
+                }
+            }
+        }
+        return formattedContent.toString()
     }
 }

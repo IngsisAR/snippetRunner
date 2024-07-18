@@ -30,11 +30,15 @@ class RunnerController(
         @AuthenticationPrincipal jwt: Jwt,
         @RequestBody snippetDTO: RunSnippetRequestDTO,
     ): ResponseEntity<RunSnippetResponseDTO> {
-        val runnerService =
-            languageRunnerServiceSelector.getRunnerService(
-                snippetDTO.language ?: enumValueOf(System.getenv("DEFAULT_LANGUAGE") ?: "PRINTSCRIPT"),
-            )
-        return ResponseEntity.ok(runnerService.runSnippet(jwt.subject, snippetDTO))
+        try {
+            val runnerService =
+                languageRunnerServiceSelector.getRunnerService(
+                    snippetDTO.language ?: enumValueOf(System.getenv("DEFAULT_LANGUAGE") ?: "PRINTSCRIPT"),
+                )
+            return ResponseEntity.ok(runnerService.runSnippet(jwt.subject, snippetDTO))
+        } catch (e: Exception) {
+            return ResponseEntity.internalServerError().body(RunSnippetResponseDTO(listOf(e.message ?: "An error occurred")))
+        }
     }
 
     @PostMapping("/format")
@@ -46,7 +50,11 @@ class RunnerController(
             languageRunnerServiceSelector.getRunnerService(
                 snippetDTO.language ?: enumValueOf(System.getenv("DEFAULT_LANGUAGE") ?: "PRINTSCRIPT"),
             )
-        val result = runnerService.format(jwt.subject, snippetDTO)
-        return ResponseEntity.ok(result)
+        try {
+            val result = runnerService.format(jwt.subject, snippetDTO)
+            return ResponseEntity.ok(result)
+        } catch (e: Exception) {
+            return ResponseEntity.internalServerError().body(e.message)
+        }
     }
 }
