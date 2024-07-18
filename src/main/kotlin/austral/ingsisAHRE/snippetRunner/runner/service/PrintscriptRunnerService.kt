@@ -38,7 +38,7 @@ class PrintscriptRunnerService : RunnerService {
                 inputProvider,
                 outputProvider,
                 customEnvironmentProvider,
-                snippetDTO.version ?: System.getenv("DEFAULT_VERSION") ?: "1.1.0",
+                snippetDTO.version ?: System.getenv("DEFAULT_VERSION") ?: "1.1",
             )
         } catch (e: IndexOutOfBoundsException) {
             logger.info("Snippet executed successfully")
