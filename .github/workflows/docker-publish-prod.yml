@@ -80,11 +80,11 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan 191.233.252.72 >> ~/.ssh/known_hosts
+          ssh-keyscan ${{ secrets.PROD_IP }} >> ~/.ssh/known_hosts
 
       - name: Deploy to Production
         run: |
-          ssh ingsisAHRE@191.233.252.72 << 'EOF'
+          ssh ingsisAHRE@${{ secrets.PROD_IP }} << 'EOF'
             cd snippetInfra
             sudo su
             docker pull ${{ env.REGISTRY }}/$(echo "${{ github.repository }}-prod" | tr '[:upper:]' '[:lower:]'):main
