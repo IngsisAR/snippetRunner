@@ -20,5 +20,4 @@ interface RunnerService {
         userId: String,
         snippetDTO: LintSnippetDTO,
     ): String
-//    fun lint(snippetContent: String, languageVersion: String): List<String>
 }

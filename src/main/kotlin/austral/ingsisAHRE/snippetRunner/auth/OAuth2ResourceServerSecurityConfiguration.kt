@@ -33,7 +33,7 @@ class OAuth2ResourceServerSecurityConfiguration(
         }
             .oauth2ResourceServer { it.jwt(withDefaults()) }
             .cors {
-                it.disable()
+                it.configurationSource { CorsConfig().corsFilter() }
             }
             .csrf {
                 it.disable()

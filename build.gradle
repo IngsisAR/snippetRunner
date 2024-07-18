@@ -59,6 +59,7 @@ dependencies {
   implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
   compileOnly 'org.projectlombok:lombok'
   annotationProcessor 'org.projectlombok:lombok'
+  implementation("org.springframework.boot:spring-boot-starter-logging")
   implementation("com.newrelic.agent.java:newrelic-agent:7.2.0")
   ktlint("com.pinterest:ktlint:0.49.1") {
     attributes {
