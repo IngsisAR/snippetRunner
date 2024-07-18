@@ -86,7 +86,7 @@ jobs:
           ssh ingsisAHRE@${{ secrets.DEV_IP }} << 'EOF'
             cd snippetInfra
             sudo su
-            docker pull ${{ env.REGISTRY }}/$(echo "${{ github.repository }}-prod" | tr '[:upper:]' '[:lower:]'):main
-            docker-compose -f docker-compose.dev.yml up -d
+            docker pull ${{ env.REGISTRY }}/$(echo "${{ github.repository }}-dev" | tr '[:upper:]' '[:lower:]'):main
+            docker-compose -f docker-compose.dev.yml up -d snippet_runner
             docker image prune -f
           EOF

@@ -31,8 +31,8 @@ repositories {
     name = "GitHubPackages"
     url = uri("https://maven.pkg.github.com/austral-ingsis/class-redis-streams")
     credentials {
-      username = System.getenv("USERNAME")
-      password = System.getenv("TOKEN")
+      username = project.findProperty("USERNAME") ?: System.getenv("USERNAME")
+      password = project.findProperty("TOKEN") ?: System.getenv("TOKEN")
     }
   }
 }
@@ -101,7 +101,7 @@ tasks.register("ktlintFormat", JavaExec) {
   args "-F", "src/**/*.kt", "**.kts", "!**/build/**"
 }
 
-task installGitHooks(type: Copy) {
+tasks.register('installGitHooks', Copy) {
   from new File(rootProject.rootDir, '/hooks')
   into { new File(rootProject.rootDir, '/.git/hooks') }
   fileMode 0775
@@ -129,13 +129,13 @@ tasks.jacocoTestCoverageVerification {
   }
 }
 
-task downloadNewrelic(type: Download) {
+tasks.register('downloadNewrelic', Download) {
   mkdir 'newrelic'
   src 'https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic-java.zip'
   dest file('newrelic')
 }
 
-task unzipNewrelic(type: Copy) {
+tasks.register('unzipNewrelic', Copy) {
   from zipTree(file('newrelic/newrelic-java.zip'))
   into rootDir
 }
