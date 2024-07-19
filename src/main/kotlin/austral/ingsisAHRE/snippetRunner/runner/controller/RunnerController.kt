@@ -31,7 +31,7 @@ class RunnerController(
                 )
             return ResponseEntity.ok(runnerService.runSnippet(jwt.subject, snippetDTO))
         } catch (e: Exception) {
-            return ResponseEntity.badRequest().body(RunSnippetResponseDTO(listOf(e.message ?: "An error occurred")))
+            return ResponseEntity.badRequest().body(RunSnippetResponseDTO(listOf(), listOf(e.message ?: "An error occurred")))
         }
     }
 

@@ -42,10 +42,10 @@ class PrintscriptRunnerService : RunnerService {
             )
         } catch (e: IndexOutOfBoundsException) {
             logger.info("Snippet executed successfully")
-            return RunSnippetResponseDTO(outputs)
+            return RunSnippetResponseDTO(outputs, listOf())
         }
         logger.info("Snippet executed successfully")
-        return RunSnippetResponseDTO(outputs)
+        return RunSnippetResponseDTO(outputs, listOf())
     }
 
     private fun parseEnvironmentVariables(envs: List<Env>): HashMap<String, String> {

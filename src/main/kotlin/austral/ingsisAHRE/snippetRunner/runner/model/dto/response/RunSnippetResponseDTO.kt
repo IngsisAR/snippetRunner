@@ -3,5 +3,6 @@ package austral.ingsisAHRE.snippetRunner.runner.model.dto.response
 import java.io.Serializable
 
 data class RunSnippetResponseDTO(
-    val output: List<String>,
+    val outputs: List<String>,
+    val errors: List<String>,
 ) : Serializable
