@@ -91,5 +91,5 @@ jobs:
             sudo su
             docker pull ${{ env.REGISTRY }}/$(echo "${{ github.repository }}-prod" | tr '[:upper:]' '[:lower:]'):main
             docker-compose -f docker-compose.prod.yml up -d snippet_runner
-            docker image prune -a -f
+            docker image prune -f
           EOF

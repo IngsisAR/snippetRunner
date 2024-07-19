@@ -48,7 +48,7 @@ class RunnerController(
             val result = runnerService.format(jwt.subject, snippetDTO)
             return ResponseEntity.ok(result)
         } catch (e: Exception) {
-            return ResponseEntity.internalServerError().body(e.message)
+            return ResponseEntity.badRequest().body(e.message)
         }
     }
 }

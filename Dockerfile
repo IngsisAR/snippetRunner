@@ -28,6 +28,7 @@ FROM eclipse-temurin:21-jre
 COPY --from=build /home/gradle/src/build/libs/*.jar /app/snippetRunner.jar
 COPY --from=build /home/gradle/src/newrelic/newrelic.jar /newrelic.jar
 COPY --from=build /home/gradle/src/newrelic/newrelic.yml /newrelic.yml
+COPY src/main/resources/static /app/src/main/resources/static
 
 WORKDIR /app
 EXPOSE ${PORT}
