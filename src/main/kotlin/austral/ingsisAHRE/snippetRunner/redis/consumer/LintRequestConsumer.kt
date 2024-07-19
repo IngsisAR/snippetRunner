@@ -7,6 +7,8 @@ import austral.ingsisAHRE.snippetRunner.redis.event.LintStatus
 import austral.ingsisAHRE.snippetRunner.redis.producer.LintResultProducer
 import austral.ingsisAHRE.snippetRunner.runner.model.dto.request.LintSnippetDTO
 import austral.ingsisAHRE.snippetRunner.runner.service.PrintscriptRunnerService
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.runBlocking
 import org.austral.ingsis.redis.RedisStreamConsumer
 import org.slf4j.Logger
@@ -22,72 +24,76 @@ import org.springframework.stereotype.Component
 class LintRequestConsumer
     @Autowired
     constructor(
-        @Value("\${redis.streams.lintResult}")
-        private val streamName: String,
+        @Value("\${redis.streams.lintRequest}")
+        streamName: String,
         @Value("\${redis.groups.lint}")
-        private val groupName: String,
+        groupName: String,
         redis: RedisTemplate<String, String>,
         private val assetService: AssetService,
         private val printscriptRunnerService: PrintscriptRunnerService,
         private val producer: LintResultProducer,
-    ) : RedisStreamConsumer<LintRequestEvent>(streamName, groupName, redis) {
+        private val objectMapper: ObjectMapper,
+    ) : RedisStreamConsumer<String>(streamName, groupName, redis) {
         init {
             subscription()
         }
         private val logger: Logger = LoggerFactory.getLogger(LintRequestConsumer::class.java)
 
-        override fun onMessage(record: ObjectRecord<String, LintRequestEvent>) {
-            logger.info("Consuming lint result for Snippet(${record.value.snippetId}) for User(${record.value.userId})")
+        override fun onMessage(record: ObjectRecord<String, String>) {
+            val lintRequest: LintRequestEvent = objectMapper.readValue(record.value)
+            logger.info("Consuming lint request for Snippet(${lintRequest.snippetId}) for User(${lintRequest.userId})")
 
-            val payload = record.value
-            logger.info("Getting asset for Snippet(${payload.snippetId})")
-            val asset = assetService.getSnippet(payload.snippetId)
-            if (!asset.statusCode.is2xxSuccessful) {
-                logger.error("Asset for Snippet(${payload.snippetId}) not found")
-                return
-            }
+            logger.info("Getting asset for Snippet(${lintRequest.snippetId})")
+            val asset = assetService.getSnippet(lintRequest.snippetId)
 
             try {
-                logger.info("Linting Snippet(${payload.snippetId})")
+                logger.info("Linting Snippet(${lintRequest.snippetId})")
                 val result: String =
                     printscriptRunnerService.lint(
-                        payload.userId,
+                        lintRequest.userId,
                         LintSnippetDTO(
                             content = asset.body!!,
-                            snippetId = payload.snippetId,
-                            linterRules = payload.linterRules,
+                            snippetId = lintRequest.snippetId,
+                            linterRules = lintRequest.linterRules,
                         ),
                     )
 
-                val lintStatus: LintStatus = if (result.isEmpty()) LintStatus.PASSED else LintStatus.FAILED
+                if (result.isNotBlank()) logger.error("Linting Snippet(${lintRequest.snippetId}) failed - error: $result")
+                val lintStatus: LintStatus = if (result.isBlank()) LintStatus.PASSED else LintStatus.FAILED
 
                 runBlocking {
                     producer.publishEvent(
-                        LintResultEvent(
-                            userId = payload.userId,
-                            snippetId = payload.snippetId,
-                            status = lintStatus,
+                        objectMapper.writeValueAsString(
+                            LintResultEvent(
+                                userId = lintRequest.userId,
+                                snippetId = lintRequest.snippetId,
+                                status = lintStatus,
+                            ),
                         ),
                     )
                 }
             } catch (e: Exception) {
-                logger.error("Error linting Snippet(${payload.snippetId})", e)
+                logger.error("Error linting Snippet(${lintRequest.snippetId})", e)
                 runBlocking {
                     producer.publishEvent(
-                        LintResultEvent(
-                            userId = payload.userId,
-                            snippetId = payload.snippetId,
-                            status = LintStatus.FAILED,
+                        objectMapper.writeValueAsString(
+                            LintResultEvent(
+                                userId = lintRequest.userId,
+                                snippetId = lintRequest.snippetId,
+                                status = LintStatus.FAILED,
+                            ),
                         ),
                     )
                 }
+            } finally {
+                logger.info("Linting Snippet(${lintRequest.snippetId}) finished")
             }
         }
 
-        override fun options(): StreamReceiver.StreamReceiverOptions<String, ObjectRecord<String, LintRequestEvent>> {
+        override fun options(): StreamReceiver.StreamReceiverOptions<String, ObjectRecord<String, String>> {
             return StreamReceiver.StreamReceiverOptions.builder()
                 .pollTimeout(java.time.Duration.ofMillis(10000))
-                .targetType(LintRequestEvent::class.java)
+                .targetType(String::class.java)
                 .build()
         }
     }
