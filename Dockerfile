@@ -1,7 +1,7 @@
 # Etapa 1: Construcción
 FROM gradle:8.8-jdk21 AS build
 
-LABEL author="Ingsis AHRE"
+LABEL author="Ingsis AR"
 
 COPY . /home/gradle/src
 

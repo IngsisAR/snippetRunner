@@ -53,8 +53,6 @@ jobs:
           build-args: |
             USERNAME=${{ secrets.PUBLISH_TOKEN }}
             TOKEN=${{ secrets.PACKAGE_TOKEN }}
-            NEW_RELIC_LICENSE_KEY=${{ secrets.NEW_RELIC_LICENSE_KEY }}
-            NEW_RELIC_APP_NAME=${{ secrets.NEW_RELIC_APP_NAME_PROD }}
 
       # Este paso genera una atestación de artefactos para la imagen, que es una declaración infalsificable sobre dónde y cómo se construyó. Aumenta la seguridad de la cadena de suministro para las personas que consumen la imagen. Para más información, vea "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)."
       - name: Generate artifact attestation

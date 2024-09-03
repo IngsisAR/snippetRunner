@@ -21,7 +21,7 @@ repositories {
   mavenCentral()
   maven {
     name = "GitHubPackages"
-    url = uri("https://maven.pkg.github.com/IngsisAHRE/PrintScript")
+    url = uri("https://maven.pkg.github.com/IngsisAR/PrintScript")
     credentials {
       username = project.findProperty("USERNAME") ?: System.getenv("USERNAME")
       password = project.findProperty("TOKEN") ?: System.getenv("TOKEN")
@@ -71,7 +71,7 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 }
 
-tasks.withType(KotlinCompile) {
+tasks.withType(KotlinCompile).configureEach {
   kotlinOptions {
     freeCompilerArgs += "-Xjsr305=strict"
     jvmTarget = 21
