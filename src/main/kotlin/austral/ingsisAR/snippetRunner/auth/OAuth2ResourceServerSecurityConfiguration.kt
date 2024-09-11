@@ -25,6 +25,8 @@ class OAuth2ResourceServerSecurityConfiguration(
     val issuer: String,
     @Value("\${operations.url}")
     val operationsUrl: String,
+    @Value("\${ui.url}")
+    val uiUrl: String,
 ) {
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
@@ -40,7 +42,7 @@ class OAuth2ResourceServerSecurityConfiguration(
     @Bean
     fun corsConfigurationSource(): UrlBasedCorsConfigurationSource {
         val corsConfiguration = CorsConfiguration()
-        corsConfiguration.allowedOrigins = listOf(operationsUrl)
+        corsConfiguration.allowedOrigins = listOf(operationsUrl, uiUrl)
         corsConfiguration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
         corsConfiguration.allowedHeaders = listOf("*")
         corsConfiguration.allowCredentials = false
