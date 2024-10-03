@@ -33,4 +33,4 @@ COPY src/main/resources/static /app/src/main/resources/static
 WORKDIR /app
 EXPOSE ${PORT}
 
-ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=production", "-javaagent:/newrelic.jar", "-Dnewrelic.config.license_key=${NEW_RELIC_LICENSE_KEY}", "-Dnewlic.config.app_name=${NEW_RELIC_APP_NAME}", "/app/snippetRunner.jar"]
+ENTRYPOINT ["java", "-javaagent:/newrelic.jar", "-Dnewrelic.config.license_key=${NEW_RELIC_LICENSE_KEY}", "-Dnewlic.config.app_name=${NEW_RELIC_APP_NAME}", "-jar", "/app/snippetRunner.jar"]
