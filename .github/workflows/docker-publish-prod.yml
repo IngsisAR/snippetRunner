@@ -54,6 +54,7 @@ jobs:
             USERNAME=${{ secrets.USERNAME }}
             TOKEN=${{ secrets.PUBLISH_TOKEN }}
 
+
       # Este paso genera una atestación de artefactos para la imagen, que es una declaración infalsificable sobre dónde y cómo se construyó. Aumenta la seguridad de la cadena de suministro para las personas que consumen la imagen. Para más información, vea "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)."
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
@@ -75,19 +76,17 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Add SSH key
+      - name: Add known hosts
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan ${{ secrets.PROD_IP }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.PROD_IP }} >> ~/.ssh/known_hosts
 
       - name: Deploy to Production
         run: |
           ssh ingsisAHRE@${{ secrets.PROD_IP }} << 'EOF'
             cd snippetInfra
             sudo su
-            docker pull ${{ env.REGISTRY }}/$(echo "${{ github.repository }}-prod" | tr '[:upper:]' '[:lower:]'):main
-            docker-compose -f docker-compose.prod.yml up -d snippet_runner
+            docker-compose -f docker-compose.prod.yml pull snippet_operations
+            docker-compose -f docker-compose.prod.yml up -d snippet_operations
             docker image prune -f
           EOF
