@@ -29,8 +29,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PUBLISH_TOKEN }}
 
       # Este paso usa docker/metadata-action para extraer etiquetas y etiquetas que se aplicarán a la imagen especificada. El id "meta" permite que la salida de este paso se refiera en un paso posterior. El valor de las imágenes proporciona el nombre base para las etiquetas y etiquetas.
       - name: Extract metadata (tags, labels) for Docker
