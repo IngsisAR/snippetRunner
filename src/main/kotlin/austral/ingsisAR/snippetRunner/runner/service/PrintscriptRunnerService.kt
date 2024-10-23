@@ -71,11 +71,11 @@ class PrintscriptRunnerService : RunnerService {
         userId: String,
         snippetDTO: LintSnippetDTO,
     ): String {
-        logger.info("Linting snippet for user $userId")
+        logger.info("Linting snippet ${snippetDTO.snippetId} for user $userId")
         val configFile = "resources/static/SCAConfig.json"
         generateLinterConfig(configFile, snippetDTO.linterRules)
         val result = PrintscriptAdapter().lint(snippetDTO.content, configFile, snippetDTO.version)
-        logger.info("Snippet linted successfully")
+        logger.info("Snippet ${snippetDTO.snippetId} linted successfully")
         removeGeneratedConfigFile(configFile)
         return result
     }

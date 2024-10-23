@@ -113,17 +113,15 @@ class PrintscriptAdapter {
     ): String {
         val chunks = PrintScriptChunkReader(CHUNK_KEYWORDS_REGEX_PATH).readChunksFromString(content)
         val sca = StaticCodeAnalyzer()
-        var result: String = ""
+        var result = ""
         for (chunk in chunks) {
             when (val ast = validateChunk(chunk, getTokenRegex(version ?: "1.1"), version ?: "1.1")) {
                 is ASTBuilderSuccess -> {
-                    result += "\n" + sca.analyze(ast.astNode, configFile, version ?: "1.1")
+                    val analysis = sca.analyze(ast.astNode, configFile, version ?: "1.1")
+                    if (analysis.isNotBlank()) result += "\n" + analysis
                 }
                 is ASTBuilderFailure -> {
-                    if (ast.errorMessage == "Empty tokens") {
-                        result += "\n" + ast.errorMessage
-                        continue
-                    }
+                    continue
                 }
             }
         }
