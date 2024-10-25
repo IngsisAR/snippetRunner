@@ -82,7 +82,7 @@ class LintRequestConsumer
 
                     // Check linting result
                     val lintStatus: LintStatus = if (result.isBlank()) LintStatus.PASSED else LintStatus.FAILED
-                    logger.info("Linting Snippet(${lintRequest.snippetId}) result: $lintStatus")
+                    logger.info("Linting Snippet(${lintRequest.snippetId}) result: $lintStatus\n$result")
 
                     // Try publishing lint result with retry mechanism
                     repeat(3) {
