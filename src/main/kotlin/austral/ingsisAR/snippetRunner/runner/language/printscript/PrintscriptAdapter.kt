@@ -121,10 +121,11 @@ class PrintscriptAdapter {
                     if (analysis.isNotBlank()) result += "\n" + analysis
                 }
                 is ASTBuilderFailure -> {
-                    continue
+                    if (ast.errorMessage == "Empty tokens") continue
+                    result += "\n" + ast.errorMessage
                 }
             }
         }
-        return result
+        return result.trim()
     }
 }
