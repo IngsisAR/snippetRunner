@@ -36,7 +36,7 @@ class PrintscriptRunnerService : RunnerService {
                 inputProvider,
                 outputProvider,
                 customEnvironmentProvider,
-                snippetDTO.version ?: System.getenv("DEFAULT_VERSION") ?: "1.1",
+                System.getenv("DEFAULT_VERSION") ?: "1.1",
             )
         } catch (e: IndexOutOfBoundsException) {
             logger.info("Snippet executed successfully")
@@ -68,7 +68,7 @@ class PrintscriptRunnerService : RunnerService {
 
         writeConfigFile(tempFilePath.toString(), jsonString)
 
-        val result = PrintscriptAdapter().format(snippetDTO.content, tempFilePath.toString(), snippetDTO.version)
+        val result = PrintscriptAdapter().format(snippetDTO.content, tempFilePath.toString(), System.getenv("DEFAULT_VERSION") ?: "1.1")
 
         logger.info("Snippet formatted successfully")
 

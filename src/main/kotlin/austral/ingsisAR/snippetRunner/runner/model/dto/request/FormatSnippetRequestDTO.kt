@@ -1,12 +1,10 @@
 package austral.ingsisAR.snippetRunner.runner.model.dto.request
 
-import austral.ingsisAR.snippetRunner.runner.model.SupportedLanguage
 import java.io.Serializable
 
 data class FormatSnippetRequestDTO(
     val content: String,
-    val language: SupportedLanguage?,
-    val version: String? = null,
+    val language: String?,
     val formatterRules: FormatterRulesDTO,
 ) : Serializable
 

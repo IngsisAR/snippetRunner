@@ -5,8 +5,9 @@ import austral.ingsisAR.snippetRunner.redis.event.LintRequestEvent
 import austral.ingsisAR.snippetRunner.redis.event.LintResultEvent
 import austral.ingsisAR.snippetRunner.redis.event.LintStatus
 import austral.ingsisAR.snippetRunner.redis.producer.LintResultProducer
+import austral.ingsisAR.snippetRunner.runner.model.SupportedLanguage
 import austral.ingsisAR.snippetRunner.runner.model.dto.request.LintSnippetDTO
-import austral.ingsisAR.snippetRunner.runner.service.PrintscriptRunnerService
+import austral.ingsisAR.snippetRunner.runner.service.LanguageRunnerServiceSelector
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import jakarta.annotation.PreDestroy
@@ -35,7 +36,7 @@ class LintRequestConsumer
         private val groupName: String,
         redis: RedisTemplate<String, String>,
         private val assetService: AssetService,
-        private val printscriptRunnerService: PrintscriptRunnerService,
+        private val languageRunnerServiceSelector: LanguageRunnerServiceSelector,
         private val producer: LintResultProducer,
         private val objectMapper: ObjectMapper,
     ) : RedisStreamConsumer<String>(streamName, groupName, redis), CoroutineScope {
@@ -70,7 +71,12 @@ class LintRequestConsumer
                     // Perform linting asynchronously
                     val result: String =
                         withContext(Dispatchers.Default) {
-                            printscriptRunnerService.lint(
+                            val runnerService =
+                                languageRunnerServiceSelector.getRunnerService(
+                                    SupportedLanguage.entries.find { language -> language.fileType.language == lintRequest.language }
+                                        ?: enumValueOf(System.getenv("DEFAULT_LANGUAGE") ?: "PRINTSCRIPT"),
+                                )
+                            runnerService.lint(
                                 lintRequest.userId,
                                 LintSnippetDTO(
                                     content = asset.body!!,
