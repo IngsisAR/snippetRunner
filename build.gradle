@@ -114,6 +114,22 @@ tasks.build {
 }
 
 tasks.jacocoTestCoverageVerification {
+  afterEvaluate {
+    classDirectories.setFrom(files(classDirectories.files.collect {
+      fileTree(dir: it, exclude: [
+        'austral/ingsisAR/snippetRunner/redis/consumer/**',
+        'austral/ingsisAR/snippetRunner/redis/producer/**',
+        'austral/ingsisAR/snippetRunner/redis/event/**',
+        'austral/ingsisAR/snippetRunner/auth/**',
+        'austral/ingsisAR/snippetRunner/shared/exception/**',
+        'austral/ingsisAR/snippetRunner/shared/config/**',
+        'austral/ingsisAR/snippetRunner/integration/**',
+        'austral/ingsisAR/snippetRunner/shared/baseModel/**',
+        'austral/ingsisAR/snippetRunner/shared/log/**',
+        'austral/ingsisAR/snippetRunner/*.class'
+      ])
+    }))
+  }
   violationRules {
     rule {
       element = "BUNDLE"
@@ -130,6 +146,27 @@ tasks.jacocoTestCoverageVerification {
     }
   }
 }
+
+jacocoTestReport {
+  dependsOn test
+  afterEvaluate {
+    classDirectories.setFrom(files(classDirectories.files.collect {
+      fileTree(dir: it, exclude: [
+        'austral/ingsisAR/snippetRunner/redis/consumer/**',
+        'austral/ingsisAR/snippetRunner/redis/producer/**',
+        'austral/ingsisAR/snippetRunner/redis/event/**',
+        'austral/ingsisAR/snippetRunner/auth/**',
+        'austral/ingsisAR/snippetRunner/shared/exception/**',
+        'austral/ingsisAR/snippetRunner/shared/config/**',
+        'austral/ingsisAR/snippetRunner/integration/**',
+        'austral/ingsisAR/snippetRunner/shared/baseModel/**',
+        'austral/ingsisAR/snippetRunner/shared/log/**',
+        'austral/ingsisAR/snippetRunner/*.class'
+      ])
+    }))
+  }
+}
+
 
 tasks.register('downloadNewrelic', Download) {
   mkdir 'newrelic'

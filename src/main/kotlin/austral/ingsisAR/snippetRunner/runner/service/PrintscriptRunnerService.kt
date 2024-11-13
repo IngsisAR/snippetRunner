@@ -30,18 +30,13 @@ class PrintscriptRunnerService : RunnerService {
         val outputs = mutableListOf<String>()
         val outputProvider = ListOutputProvider(outputs)
         val customEnvironmentProvider = CustomEnvironmentProvider(parseEnvironmentVariables(snippetDTO.envs))
-        try {
-            PrintscriptAdapter().execute(
-                snippetDTO.content,
-                inputProvider,
-                outputProvider,
-                customEnvironmentProvider,
-                System.getenv("DEFAULT_VERSION") ?: "1.1",
-            )
-        } catch (e: IndexOutOfBoundsException) {
-            logger.info("Snippet executed successfully")
-            return RunSnippetResponseDTO(outputs, listOf())
-        }
+        PrintscriptAdapter().execute(
+            snippetDTO.content,
+            inputProvider,
+            outputProvider,
+            customEnvironmentProvider,
+            System.getenv("DEFAULT_VERSION") ?: "1.1",
+        )
         logger.info("Snippet executed successfully")
         return RunSnippetResponseDTO(outputs, listOf())
     }
