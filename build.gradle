@@ -1,30 +1,35 @@
-import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-	id 'org.springframework.boot' version '3.3.1'
-	id 'io.spring.dependency-management' version '1.1.5'
-	id 'org.jetbrains.kotlin.plugin.jpa' version '1.9.24'
-	id 'org.jetbrains.kotlin.jvm' version '1.9.24'
-	id 'org.jetbrains.kotlin.plugin.spring' version '1.9.24'
-	id 'org.jlleitschuh.gradle.ktlint' version '12.1.1'
-	id 'jacoco-report-aggregation'
+  id 'org.springframework.boot' version '3.3.1'
+  id 'io.spring.dependency-management' version '1.1.5'
+  id 'org.jetbrains.kotlin.plugin.jpa' version '1.9.24'
+  id 'org.jetbrains.kotlin.jvm' version '1.9.24'
+  id 'org.jetbrains.kotlin.plugin.spring' version '1.9.24'
+  id 'jacoco-report-aggregation'
   id "de.undercouch.download" version "5.3.0"
 }
 
-group = 'austral.ingsisAHRE'
-version = '0.0.1-SNAPSHOT'
-
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+configurations {
+  compileOnly {
+    extendsFrom annotationProcessor
+  }
+  ktlint
 }
 
 repositories {
-	mavenCentral()
+  mavenCentral()
   maven {
     name = "GitHubPackages"
-    url = uri("https://maven.pkg.github.com/IngsisAHRE/PrintScript")
+    url = uri("https://maven.pkg.github.com/IngsisAR/PrintScript")
+    credentials {
+      username = project.findProperty("USERNAME") ?: System.getenv("USERNAME")
+      password = project.findProperty("TOKEN") ?: System.getenv("TOKEN")
+    }
+  }
+  maven {
+    name = "GitHubPackages"
+    url = uri("https://maven.pkg.github.com/austral-ingsis/class-redis-streams")
     credentials {
       username = project.findProperty("USERNAME") ?: System.getenv("USERNAME")
       password = project.findProperty("TOKEN") ?: System.getenv("TOKEN")
@@ -36,89 +41,140 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
+  implementation 'com.fasterxml.jackson.core:jackson-databind'
 	implementation 'org.jetbrains.kotlin:kotlin-reflect'
 	runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-  implementation 'printscript:lexer:1.1.9'
-  implementation 'printscript:interpreter:1.1.9'
-  implementation 'printscript:parser:1.1.9'
-  implementation 'printscript:utils:1.1.9'
-  implementation 'printscript:sca:1.1.9'
-  implementation 'printscript:cli:1.1.9'
-  implementation 'printscript:formatter:1.1.9'
+  implementation 'printscript:lexer:1.1.11'
+  implementation 'printscript:interpreter:1.1.11'
+  implementation 'printscript:parser:1.1.11'
+  implementation 'printscript:utils:1.1.11'
+  implementation 'printscript:sca:1.1.11'
+  implementation 'printscript:cli:1.1.11'
+  implementation 'printscript:formatter:1.1.11'
   implementation 'org.springframework.boot:spring-boot-starter-security'
   implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
   compileOnly 'org.projectlombok:lombok'
   annotationProcessor 'org.projectlombok:lombok'
+  implementation("org.springframework.boot:spring-boot-starter-logging")
   implementation("com.newrelic.agent.java:newrelic-agent:7.2.0")
+  ktlint("com.pinterest:ktlint:0.49.1") {
+    attributes {
+      attribute(Bundling.BUNDLING_ATTRIBUTE, getObjects().named(Bundling, Bundling.EXTERNAL))
+    }
+  }
+  implementation("org.springframework.boot:spring-boot-starter-data-redis")
+  implementation("org.austral.ingsis:redis-streams-mvc:0.1.13")
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 }
 
-kotlin {
-	compilerOptions {
-		freeCompilerArgs.addAll '-Xjsr305=strict'
-	}
-}
-
-ktlint {
-	version = "0.50.0"
-	debug = true
-	verbose = true
-	android = false
-	outputToConsole = true
-	outputColorName = "RED"
-	reporters {
-		reporter(ReporterType.PLAIN)
-	}
+tasks.withType(KotlinCompile).configureEach {
+  kotlinOptions {
+    freeCompilerArgs += "-Xjsr305=strict"
+    jvmTarget = 21
+  }
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
-	finalizedBy(tasks.jacocoTestReport)
+  useJUnitPlatform()
 }
 
-tasks.jacocoTestCoverageVerification {
-	violationRules {
-		rule {
-			element = "BUNDLE"
-			limit {
-				counter = "INSTRUCTION"
-				value = "COVEREDRATIO"
-				minimum = 0.80
-			}
-			limit {
-				counter = "BRANCH"
-				value = "COVEREDRATIO"
-				minimum = 0.70
-			}
-		}
-	}
+tasks.register("ktlintCheck", JavaExec) {
+  group = "verification"
+  description = "Check Kotlin code style."
+  classpath = configurations.ktlint
+  mainClass = "com.pinterest.ktlint.Main"
+  args "src/**/*.kt", "**.kts", "!**/build/**"
 }
 
-tasks.check {
-	dependsOn(tasks.ktlintCheck)
-	dependsOn(tasks.jacocoTestCoverageVerification)
+tasks.named("check") {
+  dependsOn tasks.named("ktlintCheck")
+}
+
+tasks.register("ktlintFormat", JavaExec) {
+  group = "formatting"
+  description = "Fix Kotlin code style deviations."
+  classpath = configurations.ktlint
+  mainClass = "com.pinterest.ktlint.Main"
+  jvmArgs "--add-opens=java.base/java.lang=ALL-UNNAMED"
+  args "-F", "src/**/*.kt", "**.kts", "!**/build/**"
 }
 
 tasks.register('installGitHooks', Copy) {
-	from new File(rootProject.rootDir, '/hooks')
-	into { new File(rootProject.rootDir, '/.git/hooks') }
-	fileMode 0775
+  from new File(rootProject.rootDir, '/hooks')
+  into { new File(rootProject.rootDir, '/.git/hooks') }
+  fileMode 0775
 }
 
 tasks.build {
-	dependsOn(tasks.installGitHooks)
+  dependsOn installGitHooks
 }
 
-task downloadNewrelic(type: Download) {
+tasks.jacocoTestCoverageVerification {
+  afterEvaluate {
+    classDirectories.setFrom(files(classDirectories.files.collect {
+      fileTree(dir: it, exclude: [
+        'austral/ingsisAR/snippetRunner/redis/consumer/**',
+        'austral/ingsisAR/snippetRunner/redis/producer/**',
+        'austral/ingsisAR/snippetRunner/redis/event/**',
+        'austral/ingsisAR/snippetRunner/auth/**',
+        'austral/ingsisAR/snippetRunner/shared/exception/**',
+        'austral/ingsisAR/snippetRunner/shared/config/**',
+        'austral/ingsisAR/snippetRunner/integration/**',
+        'austral/ingsisAR/snippetRunner/shared/baseModel/**',
+        'austral/ingsisAR/snippetRunner/shared/log/**',
+        'austral/ingsisAR/snippetRunner/*.class'
+      ])
+    }))
+  }
+  violationRules {
+    rule {
+      element = "BUNDLE"
+      limit {
+        counter = "INSTRUCTION"
+        value = "COVEREDRATIO"
+        minimum = 0.80
+      }
+      limit {
+        counter = "BRANCH"
+        value = "COVEREDRATIO"
+        minimum = 0.70
+      }
+    }
+  }
+}
+
+jacocoTestReport {
+  dependsOn test
+  afterEvaluate {
+    classDirectories.setFrom(files(classDirectories.files.collect {
+      fileTree(dir: it, exclude: [
+        'austral/ingsisAR/snippetRunner/redis/consumer/**',
+        'austral/ingsisAR/snippetRunner/redis/producer/**',
+        'austral/ingsisAR/snippetRunner/redis/event/**',
+        'austral/ingsisAR/snippetRunner/auth/**',
+        'austral/ingsisAR/snippetRunner/shared/exception/**',
+        'austral/ingsisAR/snippetRunner/shared/config/**',
+        'austral/ingsisAR/snippetRunner/integration/**',
+        'austral/ingsisAR/snippetRunner/shared/baseModel/**',
+        'austral/ingsisAR/snippetRunner/shared/log/**',
+        'austral/ingsisAR/snippetRunner/*.class'
+      ])
+    }))
+  }
+}
+
+
+tasks.register('downloadNewrelic', Download) {
   mkdir 'newrelic'
   src 'https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic-java.zip'
   dest file('newrelic')
 }
 
-task unzipNewrelic(type: Copy) {
+tasks.register('unzipNewrelic', Copy) {
   from zipTree(file('newrelic/newrelic-java.zip'))
   into rootDir
 }
